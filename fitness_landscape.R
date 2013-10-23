@@ -1,14 +1,16 @@
 # Fitness landscape module
 # Oct 20, 2013 by Max Joseph
 
-# Functions: dbivar (calculates bivariate normal log density with no covariance)
-# log.dens (calculates the sum of multiple bivariate normal densities)
+
+## Define helper functions ##
+# dbivar (calculates bivariate normal log density with no covariance)
 dbivar <- function(x, y, mu, sig){
   density.x <- dnorm(x, mu[1], sig, log=T)
   density.y <- dnorm(y, mu[2], sig, log=T)
   return(density.x + density.y)
 }
 
+# log.dens (calculates the sum of multiple bivariate normal densities)
 log.dens <- function(state, Mu, Sigma){
   X <- state[[1]]
   Y <- state[[2]]
@@ -23,41 +25,52 @@ log.dens <- function(state, Mu, Sigma){
   return(sumz)
 }
 
+# define_landscape (generates peak positions & standard deviations)
+define_landscape <- function(random = FALSE, n.peaks = NULL){
+  if (random == FALSE){
+    Mu1 <- c(-2, 2)
+    sig1 <- 1  
+    Mu2 <- c(2, -2)
+    sig2 <- 1
+    Mu <- cbind(Mu1, Mu2)
+    Sigma <- c(sig1, sig2)
+  } else {
+    if (!is.numeric(n.peaks)){
+      n.peaks <- runif(1, 5, 15)
+    }
+    Mu <- array(runif(2*n.peaks, -5, 5),
+                dim=c(2, n.peaks))
+    Sigma <- runif(n.peaks, .5, 2)
+  }
+  return(list(Mu=Mu, Sigma=Sigma))
+}
 
-# Some variable definitions for the first peak
-Mu1 <- c(-2, 2)
-sig1 <- 1	
-Mu2 <- c(2, -2)
-sig2 <- 1
-Mu <- cbind(Mu1, Mu2)
-Sigma <- c(sig1, sig2)
-
-xmin <- -10
-xmax <- 10
-ymin <- -10
-ymax <- 10
-
-x <- seq(xmin, xmax, length = 50)  # vector series x
-y <- seq(ymin, ymax, length = 50)  # vector series y
-
-# scaled axes range from 0 to 1
-antilogit <- function(x){exp(x) / (1 + exp(x))}
+## Define some parameters ##
+x <- seq(-10, 10, length = 100)  # vector series x
+y <- seq(-10, 10, length = 100)  # vector series y
+antilogit <- function(x){exp(x) / (1 + exp(x))} # scale from 0 to 1
 X <- antilogit(x)
 Y <- antilogit(y)
 
-st <- list(x, y) # states
-test <- log.dens(st, Mu, Sigma)
+st <- list(x, y) # initialize states
+
+# create landscape
+landscape <- define_landscape(random = T)
+
+# calculate density
+test <- log.dens(st, landscape$Mu, landscape$Sigma)
 Z <- exp(test)
 
-## Visualize the landscape in 3 dimensions
+# see landscape
 par(mfrow=c(1,1))
-persp(X, Y, Z, main = "Bivariate Logit-Normal Distribution",
-      col="orchid2", theta = 55, phi = 30, r = 40, d = 0.1, expand = 0.5,
-      ltheta = 90, lphi = 180, shade = 0.4, ticktype = "detailed", nticks=5)
+persp(X, Y, Z, main="Fitness landscape", 
+      col="orchid2", theta=55, phi=30, r=40, d=.1, expand=.5, 
+      ltheta=90, lphi=180, shade=.4, ticktype="detailed", nticks=5)
 
 # use Metropolis algorithm to simulate random walk within fitness landscape
 require(mcmc)
-out <- metrop(log.dens, initial=c(0, 0), nbatch=1000, Mu=Mu, Sigma=Sigma, scale=.3)
+out <- metrop(log.dens, initial=c(0, 0), nbatch=3000, 
+              Mu=landscape$Mu, Sigma=landscape$Sigma, scale=.2)
 xseq <- out$batch[, 1]
 yseq <- out$batch[, 2]
 alx <- antilogit(xseq)
