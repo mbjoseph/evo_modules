@@ -46,8 +46,9 @@ define_landscape <- function(random = FALSE, n.peaks = NULL){
 }
 
 ## Define some parameters ##
-x <- seq(-10, 10, length = 100)  # vector series x
-y <- seq(-10, 10, length = 100)  # vector series y
+fineness <- 150
+x <- seq(-10, 10, length = fineness)  # vector series x
+y <- seq(-10, 10, length = fineness)  # vector series y
 antilogit <- function(x){exp(x) / (1 + exp(x))} # scale from 0 to 1
 X <- antilogit(x)
 Y <- antilogit(y)
@@ -62,15 +63,25 @@ test <- log.dens(st, landscape$Mu, landscape$Sigma)
 Z <- exp(test)
 
 # see landscape
-par(mfrow=c(1,1))
-persp(X, Y, Z, main="Fitness landscape", 
+par(mfrow=c(2,2))
+persp(X, Y, Z^.00001, main="Fitness landscape: power 1E-5", 
       col="orchid2", theta=55, phi=30, r=40, d=.1, expand=.5, 
       ltheta=90, lphi=180, shade=.4, ticktype="detailed", nticks=5)
+persp(X, Y, Z, main="Fitness landscape: power 1", 
+      col="orchid2", theta=55, phi=30, r=40, d=.1, expand=.5, 
+      ltheta=90, lphi=180, shade=.4, ticktype="detailed", nticks=5)
+persp(X, Y, Z^2, main="Fitness landscape: power 2", 
+      col="orchid2", theta=55, phi=30, r=40, d=.1, expand=.5, 
+      ltheta=90, lphi=180, shade=.4, ticktype="detailed", nticks=5)
+persp(X, Y, Z^5, main="Fitness landscape: power 5", 
+      col="orchid2", theta=55, phi=30, r=40, d=.1, expand=.5, 
+      ltheta=90, lphi=180, shade=.4, ticktype="detailed", nticks=5)
+
 
 # use Metropolis algorithm to simulate random walk within fitness landscape
 require(mcmc)
 out <- metrop(log.dens, initial=c(0, 0), nbatch=3000, 
-              Mu=landscape$Mu, Sigma=landscape$Sigma, scale=.2)
+              Mu=landscape$Mu, Sigma=landscape$Sigma, scale=.05)
 xseq <- out$batch[, 1]
 yseq <- out$batch[, 2]
 alx <- antilogit(xseq)
