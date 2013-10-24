@@ -101,16 +101,4 @@ shinyServer(function(input, output){
     lines(alx, aly)
     })
   })
-                          
-  output$p2 <- renderPlot({
-    res <-  with(widgets(), {
-      sims(define_landscape(rand, strength), ngen, mutation, strength)
-    })
-    
-    with(res, {
-      persp(X, Y, Z, main="Fitness landscape", 
-            col="orchid2", theta=55, phi=30, r=40, d=.1, expand=.5, 
-            ltheta=90, lphi=180, shade=.4, ticktype="detailed", nticks=5)           
-         })
-  })
 })

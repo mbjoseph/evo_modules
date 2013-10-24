@@ -14,8 +14,7 @@ shinyUI(pageWithSidebar(
     ), 
   mainPanel(
     tabsetPanel(
-      tabPanel("Landscape contour & trajectory", plotOutput("p1")),
-      tabPanel("3d landscape grid", plotOutput("p2"))
+      tabPanel("Landscape contour & trajectory", plotOutput("p1"))
     )
     )
   )
