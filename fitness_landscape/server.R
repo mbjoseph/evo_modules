@@ -15,22 +15,21 @@ dbivar <- function(x, y, mu, sig){
 
 # log.dens (calculates the sum of multiple bivariate normal densities)
 log.dens <- function(state, Mu, Sigma, pow=1){
-  X <- state[[1]]
-  Y <- state[[2]]
+  x <- state[[1]]
+  y <- state[[2]]
   # Mu and sigma are 2Xnumber of peak arrays
   n.peaks <- length(Sigma)
-  intervals <- length(X)
+  intervals <- length(x)
   z <- array(dim=c(intervals, intervals, n.peaks))
   for (i in 1:n.peaks){
-    z[, , i] <- outer(X, Y, dbivar, mu=Mu[, i], sig=Sigma[i])
+    z[, , i] <- outer(x, y, dbivar, mu=Mu[, i], sig=Sigma[i])
   }
   sumz <- log(apply(exp(z)^pow, c(1, 2), sum))
   return(sumz)
 }
 
 # define_landscape (generates peak positions & standard deviations)
-define_landscape <- function(random = FALSE, n.peaks = NULL, 
-                             pow=1, fineness=150){
+define_landscape <- function(random = FALSE, pow=1, fineness=150){
   ## Define some parameters ##
   fineness <- 150
   x <- seq(-10, 10, length = fineness)  # vector series x
@@ -38,7 +37,7 @@ define_landscape <- function(random = FALSE, n.peaks = NULL,
   X <- antilogit(x)
   Y <- antilogit(y)
   st <- list(x, y) # initialize states
-  if (random == FALSE){ # default peaks
+  if (random == 0){ # default peaks
     Mu1 <- c(-2, 2)
     sig1 <- 1  
     Mu2 <- c(2, -2)
@@ -46,9 +45,7 @@ define_landscape <- function(random = FALSE, n.peaks = NULL,
     Mu <- cbind(Mu1, Mu2)
     Sigma <- c(sig1, sig2)
   } else { # random peaks
-    if (!is.numeric(n.peaks)){
-      n.peaks <- runif(1, 10, 30)
-    }
+    n.peaks <- runif(1, 10, 30)
     Mu <- array(runif(2*n.peaks, -5, 5),
                 dim=c(2, n.peaks))
     Sigma <- runif(n.peaks, 1, 2)
@@ -59,15 +56,13 @@ define_landscape <- function(random = FALSE, n.peaks = NULL,
   return(list(Mu=Mu, Sigma=Sigma, X=X, Y=Y, Z=Z))
 }
 
-sims <- function(strength, rand, ngen, mutation){
-  landscape <- define_landscape(random = rand, pow=strength)
-  
+sims <- function(landscape, ngen, mutation, strength){
   # use Metropolis algorithm to simulate random walk within fitness landscape
-  out <- metrop(log.dens, initial=c(0, 0), nbatch=(100 + ngen), 
+  out <- metrop(log.dens, initial=c(0, 0), nbatch=ngen, 
                 Mu=landscape$Mu, Sigma=landscape$Sigma, 
                 scale=mutation, pow=strength)
-  xseq <- out$batch[-(1:100), 1]
-  yseq <- out$batch[-(1:100), 2]
+  xseq <- out$batch[, 1]
+  yseq <- out$batch[, 2]
   alx <- antilogit(xseq)
   aly <- antilogit(yseq)
   return(list(X=landscape$X, Y=landscape$Y, Z=landscape$Z, alx=alx, aly=aly))
@@ -85,9 +80,9 @@ shinyServer(function(input, output){
          rand=input$random)
   })
   
-  output$p1 <- renderPlot(function(){
+  output$p1 <- renderPlot({
     res <- with(widgets(), {
-      sims(strength, rand, ngen, mutation)
+      sims(define_landscape(rand, strength), ngen, mutation, strength)
     })
 
     with(res, {
@@ -105,5 +100,17 @@ shinyServer(function(input, output){
       mtext("Low fitness", side=4, line=2, adj=0, cex=1.5)
     lines(alx, aly)
     })
+  })
+                          
+  output$p2 <- renderPlot({
+    res <-  with(widgets(), {
+      sims(define_landscape(rand, strength), ngen, mutation, strength)
+    })
+    
+    with(res, {
+      persp(X, Y, Z, main="Fitness landscape", 
+            col="orchid2", theta=55, phi=30, r=40, d=.1, expand=.5, 
+            ltheta=90, lphi=180, shade=.4, ticktype="detailed", nticks=5)           
+         })
   })
 })
