@@ -56,9 +56,9 @@ define_landscape <- function(random = FALSE, pow=1, fineness=150){
   return(list(Mu=Mu, Sigma=Sigma, X=X, Y=Y, Z=Z))
 }
 
-sims <- function(landscape, ngen, mutation, strength){
+sims <- function(landscape, ngen, mutation, strength, stx, sty){
   # use Metropolis algorithm to simulate random walk within fitness landscape
-  out <- metrop(log.dens, initial=c(0, 0), nbatch=ngen, 
+  out <- metrop(log.dens, initial=c(stx, sty), nbatch=ngen, 
                 Mu=landscape$Mu, Sigma=landscape$Sigma, 
                 scale=mutation, pow=strength)
   xseq <- out$batch[, 1]
@@ -82,7 +82,8 @@ shinyServer(function(input, output){
   
   output$p1 <- renderPlot({
     res <- with(widgets(), {
-      sims(define_landscape(rand, strength), ngen, mutation, strength)
+      sims(define_landscape(rand, strength), ngen, mutation, 
+           strength, stx=input$stx, sty=input$sty)
     })
 
     with(res, {
@@ -98,7 +99,7 @@ shinyServer(function(input, output){
               add = T)
       mtext("High fitness", side=4, line=2, adj=1, cex=1.5)
       mtext("Low fitness", side=4, line=2, adj=0, cex=1.5)
-    lines(alx, aly)
+    lines(c(input$stx, alx), c(input$sty, aly))
     })
   })
 })
