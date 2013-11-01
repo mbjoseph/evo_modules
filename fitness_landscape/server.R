@@ -65,7 +65,8 @@ sims <- function(landscape, ngen, mutation, strength, stx, sty){
   yseq <- out$batch[, 2]
   alx <- antilogit(xseq)
   aly <- antilogit(yseq)
-  return(list(X=landscape$X, Y=landscape$Y, Z=landscape$Z, alx=alx, aly=aly))
+  return(list(X=landscape$X, Y=landscape$Y, Z=landscape$Z, alx=alx, aly=aly, 
+              Mu=landscape$Mu, Sigma=landscape$Sigma))
 }
 
 # end helper functions
@@ -100,6 +101,21 @@ shinyServer(function(input, output){
       mtext("High fitness", side=4, line=2, adj=1, cex=1.5)
       mtext("Low fitness", side=4, line=2, adj=0, cex=1.5)
     lines(c(input$stx, alx), c(input$sty, aly))
+    })
+  })
+  
+  output$p2 <- renderPlot({
+    res <- with(widgets(), {
+      sims(define_landscape(rand, strength), ngen, mutation, 
+           strength, stx=input$stx, sty=input$sty)
+    })
+    
+    with(res, {
+      fit_series <- rep(NA, input$ngen)
+      for (i in 1:input$ngen){
+        fit_series[i] <- log.dens(state=c(alx[i], aly[i]), Mu=Mu, Sigma=Sigma)
+      }
+      plot(fit_series, type="l", yaxt="n")
     })
   })
 })

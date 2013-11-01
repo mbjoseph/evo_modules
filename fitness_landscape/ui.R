@@ -17,7 +17,8 @@ shinyUI(pageWithSidebar(
     ), 
   mainPanel(
     tabsetPanel(
-      tabPanel("Landscape contour & trajectory", plotOutput("p1"))
+      tabPanel("Landscape contour & trajectory", plotOutput("p1")), 
+      tabPanel("Fitness time series", plotOutput("p2"))
     )
     )
   )
